@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Warnow Moments – Helfer Tool Sicher</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --surface-2: #f8fafc;
+      --border: #d7deea;
+      --text: #162031;
+      --muted: #63718a;
+      --primary: #0b6b79;
+      --primary-hover: #08515c;
+      --success: #1f7a3d;
+      --warn: #b7791f;
+      --danger: #b42318;
+      --info: #174ea6;
+      --danger-soft: #fee4e2;
+      --success-soft: #dcfae6;
+      --warn-soft: #fff1d6;
+      --info-soft: #edf6ff;
+      --radius: 16px;
+      --shadow: 0 12px 32px rgba(17, 24, 39, 0.08);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #eef4f8 0%, var(--bg) 220px);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    h1, h2, h3, p { margin: 0; }
+    button, input, select, textarea { font: inherit; }
+    .hidden { display: none !important; }
+    .app { max-width: 1480px; margin: 0 auto; padding: 24px 16px 64px; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .grid { display: grid; gap: 18px; }
+    .section { padding: 18px; }
+    .section + .section { border-top: 1px solid var(--border); }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand-mark { width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, #0b6b79, #10394a); color: #fff; display: grid; place-items: center; font-weight: 800; box-shadow: var(--shadow); }
+    .sub { color: var(--muted); margin-top: 4px; font-size: 14px; }
+    .login-shell { min-height: calc(100vh - 120px); display: grid; place-items: center; }
+    .login-card { width: min(100%, 460px); padding: 28px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+    .auth-info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #edf6ff; color: #174ea6; }
+    .chip.admin { background: #eee8ff; color: #5b35b1; }
+    .chip.success { background: var(--success-soft); color: var(--success); }
+    .chip.warn { background: var(--warn-soft); color: #8a5a13; }
+    .status { padding: 10px 12px; border-radius: 12px; font-size: 14px; line-height: 1.45; }
+    .status.info { background: var(--info-soft); color: var(--info); }
+    .status.success { background: var(--success-soft); color: var(--success); }
+    .status.warn { background: var(--warn-soft); color: #8a5a13; }
+    .status.error { background: var(--danger-soft); color: var(--danger); }
+    label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 6px; font-weight: 600; }
+    input, select, textarea { width: 100%; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; background: #fff; color: var(--text); outline: none; }
+    input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(11, 107, 121, 0.12); }
+    button { border: 0; border-radius: 12px; padding: 12px 16px; cursor: pointer; min-height: 44px; transition: transform .15s ease, opacity .15s ease, background .15s ease; }
+    button:hover { transform: translateY(-1px); }
+    button:disabled { cursor: not-allowed; opacity: .6; transform: none; }
+    .btn-primary { background: var(--primary); color: #fff; font-weight: 700; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: #e9f3f5; color: var(--primary); font-weight: 700; }
+    .btn-danger { background: var(--danger); color: #fff; font-weight: 700; }
+    .btn-light { background: #eef2f7; color: var(--text); font-weight: 700; }
+    .btn-success { background: var(--success); color: #fff; font-weight: 700; }
+    .btn-small { min-height: 36px; padding: 8px 12px; font-size: 14px; }
+    .main-grid {
+  display: grid;
+  grid-template-columns: 460px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+aside.panel,
+main.panel {
+  min-width: 0;
+}
+
+.stats {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.stat {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.stat .label {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.stat .value {
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.mini-list {
+  display: grid;
+  gap: 10px;
+}
+
+.mini-item {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.mini-item-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.mini-item-title {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.mini-item-meta {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+#adminPanel .sub {
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.helper-admin-list {
+  display: grid;
+  gap: 12px;
+}
+
+.helper-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.helper-row > div:first-child {
+  min-width: 0;
+}
+
+.helper-name {
+  font-weight: 700;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.helper-row .mini-item-meta {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.helper-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
+  max-width: 100%;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.2;
+  white-space: normal;
+}
+
+.helper-pill.blue {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+.helper-pill.green {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.helper-pill.gold {
+  background: var(--warn-soft);
+  color: #8a5a13;
+}
+    .list { display: grid; gap: 14px; }
+    .booking-card { border: 1px solid var(--border); border-radius: 18px; padding: 18px; background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%); }
+    .booking-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+    .booking-title { display: grid; gap: 4px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 10px 16px; color: var(--muted); font-size: 14px; margin-bottom: 14px; }
+    .slot-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+    .slot-card { border: 1px solid var(--border); border-radius: 14px; padding: 14px; background: #fff; }
+    .slot-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; font-weight: 700; }
+    .slot-value { font-size: 15px; font-weight: 800; margin-bottom: 6px; }
+    .slot-value.open { color: var(--warn); }
+    .slot-value.mine { color: var(--success); }
+    .slot-value.taken { color: var(--info); }
+    .slot-meta { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+    .slot-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .slot-actions select { min-width: 180px; }
+    .box { background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-top: 14px; }
+    .box-title { font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .04em; }
+    .hint { color: var(--muted); font-size: 14px; }
+    .empty { border: 1px dashed var(--border); border-radius: 16px; padding: 28px; text-align: center; color: var(--muted); background: var(--surface-2); }
+    .toolbar-note { color: var(--muted); font-size: 13px; }
+    code { background: #eef2f7; padding: 2px 6px; border-radius: 6px; }
+    @media (max-width: 1280px) {
+  .main-grid {
+    grid-template-columns: 390px minmax(0, 1fr);
+  }
+
+  .helper-row {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
+  .helper-row .helper-pill.gold {
+    grid-column: 2 / 4;
+  }
+}
+
+@media (max-width: 1100px) {
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .stats,
+  .slot-grid,
+  .helper-row {
+    grid-template-columns: 1fr;
+  }
+
+  .helper-row .helper-pill.gold {
+    grid-column: auto;
+  }
+
+  .app {
+    padding: 16px 12px 48px;
+  }
+
+  .login-card,
+  .section,
+  .booking-card {
+    padding: 16px;
+  }
+}
+  </style>
+</head>
+<body>
+  <div id="loginView" class="app login-shell">
+    <div class="panel login-card grid">
+      <div>
+        <div class="brand">
+          <div class="brand-mark">WM</div>
+          <div>
+            <h1>Helfer Tool Sicher</h1>
+            <p class="sub">Helfer übernehmen nur eigene Slots, Admins verwalten die Gesamtliste.</p>
+          </div>
+        </div>
+      </div>
+      <div class="status info">Bitte echte Supabase-Zugangsdaten eintragen. Diese Version nutzt sichere RPC-Funktionen statt direkter Updates.</div>
+      <div>
+        <label for="loginEmail">E-Mail</label>
+        <input id="loginEmail" type="email" autocomplete="email" placeholder="z. B. vinc@warnowmoments.de" />
+      </div>
+      <div>
+        <label for="loginPassword">Passwort</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Passwort" />
+      </div>
+      <div><button id="loginBtn" class="btn-primary" type="button">Anmelden</button></div>
+      <div id="authStatus" class="status info">Noch nicht angemeldet.</div>
+    </div>
+  </div>
+
+  <div id="appView" class="app hidden">
+    <div class="topbar">
+      <div class="brand">
+        <div class="brand-mark">WM</div>
+        <div>
+          <h1>Warnow Moments – Helfer Tool Sicher</h1>
+          <p class="sub">Helfer können nur eigene Slots übernehmen oder freigeben, Admins dürfen gezielt zuweisen.</p>
+        </div>
+      </div>
+      <div class="auth-info">
+        <div id="userRoleChip" class="chip">Rolle</div>
+        <div id="currentUserBox" class="chip">Nicht geladen</div>
+        <button id="refreshBtn" class="btn-light" type="button">Neu laden</button>
+        <button id="logoutBtn" class="btn-danger" type="button">Abmelden</button>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <aside class="panel">
+        <div class="section grid">
+          <div>
+            <h2>Filter</h2>
+            <p class="sub">Bestätigte Buchungen im gewählten Zeitraum.</p>
+          </div>
+          <div>
+            <label for="searchInput">Suche</label>
+            <input id="searchInput" type="text" placeholder="Kunde, Referenz, Notiz, Mail" />
+          </div>
+          <div>
+            <label for="slotFilter">Slot</label>
+            <select id="slotFilter">
+              <option value="all">Alle</option>
+              <option value="open">Nur offene Slots</option>
+              <option value="mine">Nur meine Einsätze</option>
+              <option value="handover">Nur Übergaben</option>
+              <option value="return">Nur Rücknahmen</option>
+            </select>
+          </div>
+          <div>
+            <label for="daysFilter">Zeitraum</label>
+            <select id="daysFilter">
+              <option value="7">Nächste 7 Tage</option>
+              <option value="14">Nächste 14 Tage</option>
+              <option value="30" selected>Nächste 30 Tage</option>
+              <option value="90">Nächste 90 Tage</option>
+              <option value="365">Nächstes Jahr</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="section grid">
+          <div><h2>Übersicht</h2></div>
+          <div class="stats">
+            <div class="stat"><div class="label">Buchungen</div><div id="statBookings" class="value">0</div></div>
+            <div class="stat"><div class="label">Offene Slots</div><div id="statOpen" class="value">0</div></div>
+            <div class="stat"><div class="label">Meine Übergaben</div><div id="statMineHandover" class="value">0</div></div>
+            <div class="stat"><div class="label">Meine Rücknahmen</div><div id="statMineReturn" class="value">0</div></div>
+          </div>
+        </div>
+
+        <div class="section grid">
+          <div>
+            <h2>Meine nächsten Einsätze</h2>
+            <p class="sub">Kommende Übergaben und Rücknahmen für den angemeldeten Helfer.</p>
+          </div>
+          <div id="myUpcomingList" class="mini-list"></div>
+        </div>
+
+        <div id="adminPanel" class="section grid hidden">
+          <div>
+            <h2>Admin-Übersicht</h2>
+            <p class="sub">Auslastung der aktiven Helfer im aktuell geladenen Zeitraum.</p>
+          </div>
+          <div id="adminHelperList" class="helper-admin-list"></div>
+        </div>
+
+        <div class="section grid">
+          <div id="dataStatus" class="status info">Noch keine Daten geladen.</div>
+          <div class="toolbar-note">Normale Helfer laden keine vollständige Helferliste. Admins sehen zusätzlich alle aktiven Helfer und können Slots gezielt zuweisen.</div>
+        </div>
+      </aside>
+
+      <main class="panel">
+        <div class="section">
+          <div id="bookingList" class="list"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://fnktiyujyznbbhwkeyww.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_cJyOwgz2NXfDiTj7mRUVrQ_VMAMoVdd';
+
+    let sb = null;
+    let currentSession = null;
+    let currentHelperUser = null;
+    let allBookings = [];
+    let visibleBookings = [];
+    let allHelpers = [];
+    let helperMap = new Map();
+    let isBusy = false;
+
+    const els = {
+      loginView: document.getElementById('loginView'),
+      appView: document.getElementById('appView'),
+      loginEmail: document.getElementById('loginEmail'),
+      loginPassword: document.getElementById('loginPassword'),
+      loginBtn: document.getElementById('loginBtn'),
+      logoutBtn: document.getElementById('logoutBtn'),
+      refreshBtn: document.getElementById('refreshBtn'),
+      authStatus: document.getElementById('authStatus'),
+      dataStatus: document.getElementById('dataStatus'),
+      userRoleChip: document.getElementById('userRoleChip'),
+      currentUserBox: document.getElementById('currentUserBox'),
+      bookingList: document.getElementById('bookingList'),
+      searchInput: document.getElementById('searchInput'),
+      slotFilter: document.getElementById('slotFilter'),
+      daysFilter: document.getElementById('daysFilter'),
+      statBookings: document.getElementById('statBookings'),
+      statOpen: document.getElementById('statOpen'),
+      statMineHandover: document.getElementById('statMineHandover'),
+      statMineReturn: document.getElementById('statMineReturn'),
+      myUpcomingList: document.getElementById('myUpcomingList'),
+      adminPanel: document.getElementById('adminPanel'),
+      adminHelperList: document.getElementById('adminHelperList')
+    };
+
+    function escapeHtml(value) {
+      if (value === null || value === undefined) return '';
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function setStatus(target, type, message) {
+      if (!target) return;
+      target.className = 'status ' + type;
+      target.innerHTML = message;
+    }
+
+    function showLogin() {
+      els.loginView.classList.remove('hidden');
+      els.appView.classList.add('hidden');
+    }
+
+    function showApp() {
+      els.loginView.classList.add('hidden');
+      els.appView.classList.remove('hidden');
+    }
+
+    function looksLikePlaceholder(value) {
+      const v = String(value || '').trim().toUpperCase();
+      if (!v) return true;
+      return ['DEIN', 'YOUR', 'PLACEHOLDER', 'ECHTER_KEY', 'ANON_KEY'].some(marker => v.includes(marker));
+    }
+
+    function isAdmin() {
+      return String(currentHelperUser?.role || '').toLowerCase() === 'admin';
+    }
+
+    function formatDateTime(value) {
+      if (!value) return '-';
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return '-';
+      return new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short' }).format(d);
+    }
+
+    function formatDateOnly(value) {
+      if (!value) return '-';
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return '-';
+      return new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' }).format(d);
+    }
+
+    function isFutureWithinDays(value, days) {
+      if (!value) return false;
+      const now = new Date();
+      const end = new Date();
+      end.setDate(end.getDate() + Number(days || 30));
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return false;
+      return d >= now && d <= end;
+    }
+
+   function getCustomer(row) { return row?.customer || 'Unbekannt'; }
+function getBookingRef(row) { return row?.ref || '-'; }
+function getStart(row) { return row?.start_time || null; }
+function getEnd(row) { return row?.end_time || null; }
+function getEmail(row) { return row?.customer_email || '-'; }
+function getPhone(row) { return row?.customer_phone || '-'; }
+function getNote(row) { return String(row?.note || '').trim(); }
+    function getServices(note) {
+      return String(note || '')
+        .split('\n')
+        .map(v => v.trim())
+        .filter(Boolean)
+        .filter(line => !/^---/.test(line) && !/^reservierung/i.test(line) && !/^angebot/i.test(line) && !/^auftragsbestätigung/i.test(line));
+    }
+
+    function getSlotField(slotType) {
+      return slotType === 'handover' ? 'handover_helper_id' : 'return_helper_id';
+    }
+
+    function getSlotValue(row, slotType) {
+      return row?.[getSlotField(slotType)] || null;
+    }
+
+    function getHelperName(helperId) {
+      const helper = helperMap.get(String(helperId || ''));
+      return helper?.name || null;
+    }
+
+    function isMine(helperId) {
+      return String(helperId || '') === String(currentHelperUser?.id || '');
+    }
+
+    function slotState(row, slotType) {
+      const helperId = getSlotValue(row, slotType);
+      const helperName = getHelperName(helperId);
+      if (!helperId) return { label: 'Offen', cls: 'open', meta: 'Noch keinem Helfer zugewiesen.' };
+      if (isMine(helperId)) return { label: 'Mir zugewiesen', cls: 'mine', meta: 'Dieser Slot gehört aktuell dir.' };
+      return { label: 'Vergeben', cls: 'taken', meta: helperName ? ('Zugewiesen an ' + helperName + '.') : 'Zugewiesen an einen anderen Helfer.' };
+    }
+
+    async function ensureSupabaseReady() {
+      if (!window.supabase) throw new Error('Supabase SDK wurde nicht geladen.');
+      if (!SUPABASE_URL || looksLikePlaceholder(SUPABASE_URL)) throw new Error('SUPABASE_URL ist noch nicht korrekt eingetragen.');
+      if (!SUPABASE_ANON_KEY || looksLikePlaceholder(SUPABASE_ANON_KEY)) throw new Error('SUPABASE_ANON_KEY ist noch nicht korrekt eingetragen.');
+      if (!sb) sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      return sb;
+    }
+
+    async function loadCurrentHelperUser(authUserId) {
+      const client = await ensureSupabaseReady();
+      const { data, error } = await client
+        .from('wm_helpers')
+        .select('*')
+        .eq('auth_user_id', authUserId)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (error) throw error;
+      return data || null;
+    }
+
+    async function loadHelpersForAdmin() {
+      const client = await ensureSupabaseReady();
+      const { data, error } = await client
+        .from('wm_helpers')
+        .select('id, name, email, phone, role, is_active')
+        .eq('is_active', true)
+        .order('name', { ascending: true });
+      if (error) throw error;
+      allHelpers = Array.isArray(data) ? data : [];
+      helperMap = new Map(allHelpers.map(row => [String(row.id), row]));
+    }
+
+    async function loadBookings() {
+      const client = await ensureSupabaseReady();
+      const { data, error } = await client
+        .from('wm_bookings')
+        .select('*')
+        .eq('status', 'confirmed');
+      if (error) throw error;
+      allBookings = Array.isArray(data) ? data.slice().sort((a, b) => new Date(getStart(a)).getTime() - new Date(getStart(b)).getTime()) : [];
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const search = String(els.searchInput?.value || '').trim().toLowerCase();
+      const slotFilter = String(els.slotFilter?.value || 'all');
+      const days = Number(els.daysFilter?.value || 30);
+
+      visibleBookings = allBookings.filter(row => {
+        const start = getStart(row);
+        if (!isFutureWithinDays(start, days)) return false;
+        const haystack = [getCustomer(row), getBookingRef(row), getEmail(row), getNote(row)].join(' ').toLowerCase();
+        if (search && !haystack.includes(search)) return false;
+        const handoverId = getSlotValue(row, 'handover');
+        const returnId = getSlotValue(row, 'return');
+        if (slotFilter === 'open' && handoverId && returnId) return false;
+        if (slotFilter === 'mine' && !isMine(handoverId) && !isMine(returnId)) return false;
+        if (slotFilter === 'handover' && !handoverId) return false;
+        if (slotFilter === 'return' && !returnId) return false;
+        return true;
+      });
+
+      renderStats();
+      renderMyUpcoming();
+      renderAdminOverview();
+      renderBookings();
+    }
+
+    function renderStats() {
+      let mineHandover = 0;
+      let mineReturn = 0;
+      let openSlots = 0;
+      visibleBookings.forEach(row => {
+        const handoverId = getSlotValue(row, 'handover');
+        const returnId = getSlotValue(row, 'return');
+        if (!handoverId) openSlots++;
+        if (!returnId) openSlots++;
+        if (isMine(handoverId)) mineHandover++;
+        if (isMine(returnId)) mineReturn++;
+      });
+      els.statBookings.textContent = String(visibleBookings.length);
+      els.statOpen.textContent = String(openSlots);
+      els.statMineHandover.textContent = String(mineHandover);
+      els.statMineReturn.textContent = String(mineReturn);
+    }
+
+    function renderMyUpcoming() {
+      const mine = [];
+      visibleBookings.forEach(row => {
+        if (isMine(getSlotValue(row, 'handover'))) mine.push({ type: 'Übergabe', row });
+        if (isMine(getSlotValue(row, 'return'))) mine.push({ type: 'Rücknahme', row });
+      });
+      mine.sort((a, b) => new Date(getStart(a.row)).getTime() - new Date(getStart(b.row)).getTime());
+      if (!mine.length) {
+        els.myUpcomingList.innerHTML = '<div class="mini-item"><div class="mini-item-title">Noch keine eigenen Einsätze</div><div class="mini-item-meta">Sobald du einen Slot übernimmst, erscheint er hier.</div></div>';
+        return;
+      }
+      els.myUpcomingList.innerHTML = mine.slice(0, 6).map(item => `
+        <div class="mini-item">
+          <div class="mini-item-head">
+            <div class="mini-item-title">${escapeHtml(item.type)} – ${escapeHtml(getCustomer(item.row))}</div>
+            <div class="chip success">${escapeHtml(formatDateOnly(getStart(item.row)))}</div>
+          </div>
+          <div class="mini-item-meta">Ref ${escapeHtml(getBookingRef(item.row))} · ${escapeHtml(formatDateTime(getStart(item.row)))}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderAdminOverview() {
+      els.adminPanel.classList.toggle('hidden', !isAdmin());
+      if (!isAdmin()) return;
+      const counts = new Map(allHelpers.map(h => [String(h.id), { handover: 0, ret: 0 }]));
+      visibleBookings.forEach(row => {
+        const handoverId = getSlotValue(row, 'handover');
+        const returnId = getSlotValue(row, 'return');
+        if (handoverId && counts.has(String(handoverId))) counts.get(String(handoverId)).handover++;
+        if (returnId && counts.has(String(returnId))) counts.get(String(returnId)).ret++;
+      });
+      els.adminHelperList.innerHTML = allHelpers.map(helper => {
+        const c = counts.get(String(helper.id)) || { handover: 0, ret: 0 };
+        const total = c.handover + c.ret;
+        return `
+  <div class="helper-row">
+    <div>
+      <div class="name">${escapeHtml(helper.name || helper.email)}</div>
+      <div class="mini-item-meta">${escapeHtml(helper.email || '')}</div>
+    </div>
+    <div class="helper-pill blue">Übergaben ${c.handover}</div>
+    <div class="helper-pill green">Rücknahmen ${c.ret}</div>
+    <div class="helper-pill gold">Gesamt ${total}</div>
+  </div>
+`;
+      }).join('') || '<div class="mini-item">Keine aktiven Helfer gefunden.</div>';
+    }
+
+    function getSlotActions(row, slotType) {
+      const field = getSlotField(slotType);
+      const currentValue = getSlotValue(row, slotType);
+      const bookingId = row.id;
+      if (isAdmin()) {
+        const options = ['<option value="">Nicht zugewiesen</option>']
+          .concat(allHelpers.map(helper => `<option value="${escapeHtml(helper.id)}" ${String(helper.id) === String(currentValue || '') ? 'selected' : ''}>${escapeHtml(helper.name || helper.email)}</option>`))
+          .join('');
+        return `
+          <div class="slot-actions">
+            <select data-admin-select="${escapeHtml(bookingId)}" data-slot-type="${escapeHtml(slotType)}">${options}</select>
+            <button class="btn-primary btn-small" data-admin-save="${escapeHtml(bookingId)}" data-slot-type="${escapeHtml(slotType)}">Speichern</button>
+          </div>
+        `;
+      }
+      if (!currentValue) {
+        return `<div class="slot-actions"><button class="btn-success btn-small" data-claim-slot="${escapeHtml(bookingId)}" data-slot-type="${escapeHtml(slotType)}">Übernehmen</button></div>`;
+      }
+      if (isMine(currentValue)) {
+        return `<div class="slot-actions"><button class="btn-light btn-small" data-release-slot="${escapeHtml(bookingId)}" data-slot-type="${escapeHtml(slotType)}">Freigeben</button></div>`;
+      }
+      return '<div class="hint">Dieser Slot ist bereits vergeben.</div>';
+    }
+
+    function renderBookings() {
+      if (!visibleBookings.length) {
+        els.bookingList.innerHTML = '<div class="empty">Keine passenden bestätigten Buchungen im gewählten Zeitraum gefunden.</div>';
+        bindDynamicActions();
+        return;
+      }
+      els.bookingList.innerHTML = visibleBookings.map(row => {
+        const handover = slotState(row, 'handover');
+        const ret = slotState(row, 'return');
+        const services = getServices(getNote(row));
+        const serviceHtml = services.length ? '<ul>' + services.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ul>' : '<div class="hint">Keine konkreten Leistungen in der Notiz gefunden.</div>';
+        return `
+          <article class="booking-card">
+            <div class="booking-head">
+             <div class="booking-title">
+  <h3>${escapeHtml(getCustomer(row))}</h3>
+  <div class="hint">${escapeHtml(getEmail(row))}</div>
+  <div class="hint">Tel: ${escapeHtml(getPhone(row))}</div>
+  ${!row?.customer_phone ? `
+    <div class="slot-actions" style="margin-top:8px;">
+      <input
+        type="text"
+        placeholder="Telefonnummer nachtragen"
+        data-booking-phone="${escapeHtml(row.id)}"
+      />
+      <button
+        class="btn-secondary btn-small"
+        data-booking-phone-save="${escapeHtml(row.id)}"
+      >
+        Telefon speichern
+      </button>
+    </div>
+  ` : ''}
+</div>
+              <div class="chip">bestätigt</div>
+            </div>
+            <div class="meta">
+              <span>Ref: ${escapeHtml(getBookingRef(row))}</span>
+              <span>Start: ${escapeHtml(formatDateTime(getStart(row)))}</span>
+              <span>Ende: ${escapeHtml(formatDateTime(getEnd(row)))}</span>
+            </div>
+            <div class="slot-grid">
+              <div class="slot-card">
+                <div class="slot-label">Übergabe</div>
+                <div class="slot-value ${handover.cls}">${escapeHtml(handover.label)}</div>
+                <div class="slot-meta">${escapeHtml(handover.meta)}</div>
+                ${getSlotActions(row, 'handover')}
+              </div>
+              <div class="slot-card">
+                <div class="slot-label">Rücknahme</div>
+                <div class="slot-value ${ret.cls}">${escapeHtml(ret.label)}</div>
+                <div class="slot-meta">${escapeHtml(ret.meta)}</div>
+                ${getSlotActions(row, 'return')}
+              </div>
+            </div>
+            <div class="box">
+              <div class="box-title">Leistungen / Notiz</div>
+              ${serviceHtml}
+            </div>
+          </article>
+        `;
+      }).join('');
+      bindDynamicActions();
+    }
+
+    function bindDynamicActions() {
+      document.querySelectorAll('[data-claim-slot]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await claimSlot(btn.dataset.claimSlot, btn.dataset.slotType);
+        });
+      });
+      document.querySelectorAll('[data-release-slot]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          await releaseSlot(btn.dataset.releaseSlot, btn.dataset.slotType);
+        });
+      });
+      document.querySelectorAll('[data-admin-save]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const bookingId = btn.dataset.adminSave;
+          const slotType = btn.dataset.slotType;
+          const select = document.querySelector(`select[data-admin-select="${bookingId}"][data-slot-type="${slotType}"]`);
+          await adminAssignSlot(bookingId, slotType, select?.value || null);
+        });
+      });
+document.querySelectorAll('[data-booking-phone-save]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const bookingId = btn.dataset.bookingPhoneSave;
+    const input = document.querySelector(`[data-booking-phone="${bookingId}"]`);
+    await saveBookingPhone(bookingId, input?.value || '');
+  });
+});
+    }
+
+    async function callRpc(fnName, params, successMessage) {
+      if (isBusy) return;
+      try {
+        isBusy = true;
+        setStatus(els.dataStatus, 'info', 'Speichere Zuweisung ...');
+        const client = await ensureSupabaseReady();
+        const { error } = await client.rpc(fnName, params || {});
+        if (error) throw error;
+        setStatus(els.dataStatus, 'success', successMessage);
+        if (isAdmin()) await loadHelpersForAdmin();
+        await loadBookings();
+      } catch (err) {
+        console.error(err);
+        setStatus(els.dataStatus, 'error', 'Speichern fehlgeschlagen: ' + escapeHtml(err.message || String(err)));
+      } finally {
+        isBusy = false;
+      }
+    }
+
+    async function claimSlot(bookingId, slotType) {
+      await callRpc('claim_booking_slot', { p_booking_id: bookingId, p_slot: slotType }, 'Slot übernommen.');
+    }
+
+    async function releaseSlot(bookingId, slotType) {
+      await callRpc('release_booking_slot', { p_booking_id: bookingId, p_slot: slotType }, 'Slot freigegeben.');
+    }
+
+    async function adminAssignSlot(bookingId, slotType, helperId) {
+      await callRpc('admin_assign_booking_slot', { p_booking_id: bookingId, p_slot: slotType, p_helper_id: helperId || null }, 'Admin-Zuweisung gespeichert.');
+    }
+
+async function saveBookingPhone(bookingId, phone) {
+  if (isBusy) return;
+  try {
+    isBusy = true;
+    setStatus(els.dataStatus, 'info', 'Speichere Telefonnummer ...');
+    const client = await ensureSupabaseReady();
+    const { error } = await client
+      .from('wm_bookings')
+      .update({ customer_phone: String(phone || '').trim() || null })
+      .eq('id', bookingId);
+    if (error) throw error;
+    setStatus(els.dataStatus, 'success', 'Telefonnummer gespeichert.');
+    await loadBookings();
+  } catch (err) {
+    console.error(err);
+    setStatus(els.dataStatus, 'error', 'Speichern fehlgeschlagen: ' + escapeHtml(err.message || String(err)));
+  } finally {
+    isBusy = false;
+  }
+}
+
+    async function login() {
+      try {
+        const client = await ensureSupabaseReady();
+        const email = String(els.loginEmail.value || '').trim();
+        const password = String(els.loginPassword.value || '').trim();
+        if (!email || !password) {
+          setStatus(els.authStatus, 'error', 'Bitte E-Mail und Passwort eingeben.');
+          return;
+        }
+        setStatus(els.authStatus, 'info', 'Anmeldung läuft ...');
+        const { error } = await client.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        await refreshSession();
+      } catch (err) {
+        setStatus(els.authStatus, 'error', 'Login fehlgeschlagen: ' + escapeHtml(err.message || String(err)));
+      }
+    }
+
+    async function logout() {
+      try {
+        const client = await ensureSupabaseReady();
+        await client.auth.signOut();
+      } catch (err) {
+        console.error(err);
+      } finally {
+        currentSession = null;
+        currentHelperUser = null;
+        allBookings = [];
+        visibleBookings = [];
+        allHelpers = [];
+        helperMap = new Map();
+        showLogin();
+        setStatus(els.authStatus, 'info', 'Abgemeldet.');
+      }
+    }
+
+    async function refreshSession() {
+      try {
+        const client = await ensureSupabaseReady();
+        const { data, error } = await client.auth.getSession();
+        if (error) throw error;
+        currentSession = data?.session || null;
+        if (!currentSession?.user) {
+          showLogin();
+          setStatus(els.authStatus, 'info', 'Noch nicht angemeldet.');
+          return;
+        }
+        currentHelperUser = await loadCurrentHelperUser(currentSession.user.id);
+        if (!currentHelperUser) {
+          await client.auth.signOut();
+          showLogin();
+          setStatus(els.authStatus, 'error', 'Für diesen Login wurde kein aktiver Eintrag in wm_helpers gefunden.');
+          return;
+        }
+        els.currentUserBox.textContent = currentHelperUser.name || currentSession.user.email || 'Benutzer';
+        els.userRoleChip.textContent = currentHelperUser.role || 'helper';
+        els.userRoleChip.classList.toggle('admin', isAdmin());
+        allHelpers = [];
+        helperMap = new Map([[String(currentHelperUser.id), currentHelperUser]]);
+        showApp();
+        setStatus(els.dataStatus, 'info', 'Lade Daten ...');
+        if (isAdmin()) await loadHelpersForAdmin();
+        await loadBookings();
+        setStatus(els.dataStatus, 'success', 'Daten erfolgreich geladen.');
+      } catch (err) {
+        console.error(err);
+        showLogin();
+        setStatus(els.authStatus, 'error', 'Initialisierung fehlgeschlagen: ' + escapeHtml(err.message || String(err)));
+      }
+    }
+
+    els.loginBtn?.addEventListener('click', login);
+    els.logoutBtn?.addEventListener('click', logout);
+    els.refreshBtn?.addEventListener('click', refreshSession);
+    els.searchInput?.addEventListener('input', applyFilters);
+    els.slotFilter?.addEventListener('change', applyFilters);
+    els.daysFilter?.addEventListener('change', applyFilters);
+    els.loginPassword?.addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+
+    window.addEventListener('load', async () => {
+      try {
+        await refreshSession();
+        const client = await ensureSupabaseReady();
+        client.auth.onAuthStateChange(() => { refreshSession(); });
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>
