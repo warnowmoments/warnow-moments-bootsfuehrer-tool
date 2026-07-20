@@ -227,7 +227,176 @@ main.panel {
     .empty { border: 1px dashed var(--border); border-radius: 16px; padding: 28px; text-align: center; color: var(--muted); background: var(--surface-2); }
     .toolbar-note { color: var(--muted); font-size: 13px; }
     code { background: #eef2f7; padding: 2px 6px; border-radius: 6px; }
-    @media (max-width: 1280px) {
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.calendar-weekdays div {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.calendar-day {
+  min-height: 150px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-2);
+  padding: 10px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 10px;
+}
+
+.calendar-day.outside {
+  opacity: .45;
+}
+
+.calendar-day.today {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(11, 107, 121, 0.10);
+  background: #f2fbfc;
+}
+
+.calendar-day-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.calendar-day-number {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.calendar-day-count {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.calendar-day-list {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.calendar-item {
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.35;
+  border: 1px solid transparent;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.calendar-item:hover {
+  transform: translateY(-1px);
+}
+
+.calendar-item {
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.35;
+  border: 1px solid transparent;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.calendar-item:hover {
+  transform: translateY(-1px);
+}
+
+.calendar-item.needs-both {
+  background: var(--danger-soft);
+  border-color: #f1b5af;
+  color: var(--danger);
+}
+
+.calendar-item.needs-one {
+  background: var(--warn-soft);
+  border-color: #f0d18b;
+  color: #8a5a13;
+}
+
+.calendar-item.fully-assigned {
+  background: var(--success-soft);
+  border-color: #b7ebc6;
+  color: var(--success);
+}
+
+.calendar-item.mine {
+  box-shadow: inset 0 0 0 2px rgba(11, 107, 121, 0.18);
+}
+
+.calendar-item-time {
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+
+.calendar-item-title {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.calendar-item-meta {
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.calendar-item-meta strong {
+  color: var(--text);
+}
+
+.calendar-item-time {
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+
+.calendar-item-title {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.calendar-item-meta {
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+@media (max-width: 900px) {
+  .calendar-grid,
+  .calendar-weekdays {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-weekdays {
+    display: none;
+  }
+
+  .calendar-day {
+    min-height: auto;
+  }
+}    
+@media (max-width: 1280px) {
   .main-grid {
     grid-template-columns: 390px minmax(0, 1fr);
   }
@@ -379,10 +548,30 @@ main.panel {
       </aside>
 
       <main class="panel">
-        <div class="section">
-          <div id="bookingList" class="list"></div>
-        </div>
-      </main>
+  <div class="section grid">
+    <div class="booking-head" style="margin-bottom:0;">
+      <div class="booking-title">
+        <h2>Monatsübersicht</h2>
+        <div class="hint">Alle aktuell gefilterten bestätigten Buchungen im Monatskalender.</div>
+      </div>
+      <div class="slot-actions">
+        <button id="calendarPrevBtn" class="btn-light btn-small" type="button">← Monat zurück</button>
+        <button id="calendarTodayBtn" class="btn-secondary btn-small" type="button">Heute</button>
+        <button id="calendarNextBtn" class="btn-light btn-small" type="button">Monat vor →</button>
+      </div>
+    </div>
+
+    <div id="calendarMonthLabel" class="hint" style="font-weight:700;"></div>
+    <div class="calendar-weekdays">
+      <div>Mo</div><div>Di</div><div>Mi</div><div>Do</div><div>Fr</div><div>Sa</div><div>So</div>
+    </div>
+    <div id="calendarGrid" class="calendar-grid"></div>
+  </div>
+
+  <div class="section">
+    <div id="bookingList" class="list"></div>
+  </div>
+</main>
     </div>
   </div>
 
@@ -398,6 +587,7 @@ main.panel {
     let allHelpers = [];
     let helperMap = new Map();
     let isBusy = false;
+    let calendarCursor = new Date();
 
     const els = {
       loginView: document.getElementById('loginView'),
@@ -421,7 +611,12 @@ main.panel {
       statMineReturn: document.getElementById('statMineReturn'),
       myUpcomingList: document.getElementById('myUpcomingList'),
       adminPanel: document.getElementById('adminPanel'),
-      adminHelperList: document.getElementById('adminHelperList')
+      adminHelperList: document.getElementById('adminHelperList'),
+      calendarPrevBtn: document.getElementById('calendarPrevBtn'),
+      calendarTodayBtn: document.getElementById('calendarTodayBtn'),
+      calendarNextBtn: document.getElementById('calendarNextBtn'),
+      calendarMonthLabel: document.getElementById('calendarMonthLabel'),
+      calendarGrid: document.getElementById('calendarGrid')
     };
 
     function escapeHtml(value) {
@@ -589,6 +784,7 @@ function getNote(row) { return String(row?.note || '').trim(); }
       renderStats();
       renderMyUpcoming();
       renderAdminOverview();
+      renderCalendar();
       renderBookings();
     }
 
@@ -659,6 +855,123 @@ function getNote(row) { return String(row?.note || '').trim(); }
       }).join('') || '<div class="mini-item">Keine aktiven Helfer gefunden.</div>';
     }
 
+    function toDateKey(value) {
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return '';
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function isSameDay(a, b) {
+      return toDateKey(a) === toDateKey(b);
+    }
+
+    function isSameMonth(date, ref) {
+      const d = new Date(date);
+      return d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth();
+    }
+
+    function openBookingCard(bookingId) {
+      const card = document.querySelector(`[data-booking-id="${bookingId}"]`);
+      if (!card) return;
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      card.style.boxShadow = '0 0 0 3px rgba(11, 107, 121, 0.18)';
+      setTimeout(() => { card.style.boxShadow = ''; }, 1600);
+    }
+
+    function renderCalendar() {
+  if (!els.calendarGrid || !els.calendarMonthLabel) return;
+
+  const monthStart = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth(), 1);
+
+  els.calendarMonthLabel.textContent = new Intl.DateTimeFormat('de-DE', {
+    month: 'long',
+    year: 'numeric'
+  }).format(monthStart);
+
+  const jsStartWeekday = monthStart.getDay();
+  const mondayOffset = (jsStartWeekday + 6) % 7;
+  const gridStart = new Date(monthStart);
+  gridStart.setDate(monthStart.getDate() - mondayOffset);
+
+  const cells = [];
+
+  for (let i = 0; i < 42; i++) {
+    const day = new Date(gridStart);
+    day.setDate(gridStart.getDate() + i);
+
+    const items = visibleBookings.filter(row => isSameDay(getStart(row), day));
+    const isToday = isSameDay(day, new Date());
+    const outside = !isSameMonth(day, monthStart);
+
+    cells.push(`
+      <div class="calendar-day ${outside ? 'outside' : ''} ${isToday ? 'today' : ''}">
+        <div class="calendar-day-head">
+          <div class="calendar-day-number">${day.getDate()}</div>
+          <div class="calendar-day-count">${items.length ? items.length + ' Buchung' + (items.length !== 1 ? 'en' : '') : ''}</div>
+        </div>
+        <div class="calendar-day-list">
+          ${
+            items.length
+              ? items.map(row => {
+                  const handoverHelperId = getSlotValue(row, 'handover');
+                  const returnHelperId = getSlotValue(row, 'return');
+
+                  const handoverHelperName = handoverHelperId
+                    ? (getHelperName(handoverHelperId) || (isMine(handoverHelperId) ? 'Du' : 'anderer Helfer'))
+                    : 'offen';
+
+                  const returnHelperName = returnHelperId
+                    ? (getHelperName(returnHelperId) || (isMine(returnHelperId) ? 'Du' : 'anderer Helfer'))
+                    : 'offen';
+
+                  const mine =
+                    isMine(handoverHelperId) || isMine(returnHelperId);
+
+                  let assignmentClass = 'fully-assigned';
+                  if (!handoverHelperId && !returnHelperId) {
+                    assignmentClass = 'needs-both';
+                  } else if (!handoverHelperId || !returnHelperId) {
+                    assignmentClass = 'needs-one';
+                  }
+
+                  return `
+                    <button
+                      type="button"
+                      class="calendar-item ${assignmentClass} ${mine ? 'mine' : ''}"
+                      data-calendar-booking="${escapeHtml(row.id)}"
+                    >
+                      <div class="calendar-item-time">
+                        ${escapeHtml(formatDateTime(getStart(row)).split(', ').pop() || '')}
+                      </div>
+
+                      <div class="calendar-item-title">
+                        ${escapeHtml(getCustomer(row))}
+                      </div>
+
+                      <div class="calendar-item-meta">
+                        <strong>Übergabe:</strong> ${escapeHtml(handoverHelperName)}<br>
+                        <strong>Rücknahme:</strong> ${escapeHtml(returnHelperName)}
+                      </div>
+                    </button>
+                  `;
+                }).join('')
+              : '<div class="hint">Keine Buchungen</div>'
+          }
+        </div>
+      </div>
+    `);
+  }
+
+  els.calendarGrid.innerHTML = cells.join('');
+
+  document.querySelectorAll('[data-calendar-booking]').forEach(btn => {
+    btn.addEventListener('click', () => openBookingCard(btn.dataset.calendarBooking));
+  });
+}
+
     function getSlotActions(row, slotType) {
       const field = getSlotField(slotType);
       const currentValue = getSlotValue(row, slotType);
@@ -695,7 +1008,7 @@ function getNote(row) { return String(row?.note || '').trim(); }
         const services = getServices(getNote(row));
         const serviceHtml = services.length ? '<ul>' + services.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ul>' : '<div class="hint">Keine konkreten Leistungen in der Notiz gefunden.</div>';
         return `
-          <article class="booking-card">
+          <article class="booking-card" data-booking-id="${escapeHtml(row.id)}">
             <div class="booking-head">
              <div class="booking-title">
   <h3>${escapeHtml(getCustomer(row))}</h3>
@@ -905,6 +1218,20 @@ async function saveBookingPhone(bookingId, phone) {
     els.searchInput?.addEventListener('input', applyFilters);
     els.slotFilter?.addEventListener('change', applyFilters);
     els.daysFilter?.addEventListener('change', applyFilters);
+        els.calendarPrevBtn?.addEventListener('click', () => {
+      calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() - 1, 1);
+      renderCalendar();
+    });
+
+    els.calendarTodayBtn?.addEventListener('click', () => {
+      calendarCursor = new Date();
+      renderCalendar();
+    });
+
+    els.calendarNextBtn?.addEventListener('click', () => {
+      calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + 1, 1);
+      renderCalendar();
+    });
     els.loginPassword?.addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
 
     window.addEventListener('load', async () => {
