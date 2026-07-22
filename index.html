@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Warnow Moments – Helfer Tool Sicher</title>
+  <title>Warnow Moments – Handover Tool</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
@@ -76,6 +76,36 @@
   grid-template-columns: 460px minmax(0, 1fr);
   gap: 20px;
   align-items: start;
+}
+
+.absence-item {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.absence-item-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+  align-items: center;
+}
+
+.absence-item-title {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.absence-item-meta {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.absence-item .chip {
+  white-space: nowrap;
 }
 
 aside.panel,
@@ -308,21 +338,6 @@ main.panel {
   transform: translateY(-1px);
 }
 
-.calendar-item {
-  border-radius: 12px;
-  padding: 8px 10px;
-  font-size: 12px;
-  line-height: 1.35;
-  border: 1px solid transparent;
-  background: #fff;
-  cursor: pointer;
-  text-align: left;
-}
-
-.calendar-item:hover {
-  transform: translateY(-1px);
-}
-
 .calendar-item.needs-both {
   background: var(--danger-soft);
   border-color: #f1b5af;
@@ -345,21 +360,27 @@ main.panel {
   box-shadow: inset 0 0 0 2px rgba(11, 107, 121, 0.18);
 }
 
-.calendar-item-time {
-  font-weight: 800;
-  margin-bottom: 2px;
+.calendar-item.conflict {
+  position: relative;
+  border-color: #e6a7a1;
 }
 
-.calendar-item-title {
-  font-weight: 700;
-  color: var(--text);
+.calendar-item.conflict::after {
+  content: "";
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--danger);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
 }
 
-.calendar-item-meta {
-  color: var(--muted);
-  font-size: 11px;
-  margin-top: 4px;
-  line-height: 1.4;
+.calendar-item.absence {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #374151;
 }
 
 .calendar-item-meta strong {
@@ -446,8 +467,8 @@ main.panel {
         <div class="brand">
           <div class="brand-mark">WM</div>
           <div>
-            <h1>Helfer Tool Sicher</h1>
-            <p class="sub">Helfer übernehmen nur eigene Slots, Admins verwalten die Gesamtliste.</p>
+            <h1>Handover Tool</h1>
+            <p class="sub">Teammitglied übernehmen nur eigene Slots, Admins verwalten die Gesamtliste.</p>
           </div>
         </div>
       </div>
@@ -470,8 +491,8 @@ main.panel {
       <div class="brand">
         <div class="brand-mark">WM</div>
         <div>
-          <h1>Warnow Moments – Helfer Tool Sicher</h1>
-          <p class="sub">Helfer können nur eigene Slots übernehmen oder freigeben, Admins dürfen gezielt zuweisen.</p>
+          <h1>Warnow Moments – Handover Tool</h1>
+          <p class="sub">Teammitglied können nur eigene Slots übernehmen oder freigeben, Admins dürfen gezielt zuweisen.</p>
         </div>
       </div>
       <div class="auth-info">
@@ -528,7 +549,7 @@ main.panel {
         <div class="section grid">
           <div>
             <h2>Meine nächsten Einsätze</h2>
-            <p class="sub">Kommende Übergaben und Rücknahmen für den angemeldeten Helfer.</p>
+            <p class="sub">Kommende Übergaben und Rücknahmen für das angemeldete Teammitglied.</p>
           </div>
           <div id="myUpcomingList" class="mini-list"></div>
         </div>
@@ -536,14 +557,59 @@ main.panel {
         <div id="adminPanel" class="section grid hidden">
           <div>
             <h2>Admin-Übersicht</h2>
-            <p class="sub">Auslastung der aktiven Helfer im aktuell geladenen Zeitraum.</p>
+            <p class="sub">Auslastung der aktiven Teammitglied im aktuell geladenen Zeitraum.</p>
           </div>
           <div id="adminHelperList" class="helper-admin-list"></div>
         </div>
 
+<div class="section grid">
+  <div>
+    <h2>Abwesenheiten</h2>
+    <p class="sub">Urlaub, Krankheit oder blockierte Zeiten für Teammitglied verwalten.</p>
+  </div>
+
+  <div>
+    <label for="absenceHelperSelect">Teammitglied</label>
+    <select id="absenceHelperSelect"></select>
+  </div>
+
+  <div>
+    <label for="absenceType">Typ</label>
+    <select id="absenceType">
+  <option value="urlaub">Urlaub</option>
+  <option value="krank">Krank</option>
+  <option value="nicht_verfuegbar">Nicht verfügbar</option>
+  <option value="sonstiges">Sonstiges</option>
+</select>
+  </div>
+
+  <div>
+    <label for="absenceStart">Von</label>
+    <input id="absenceStart" type="datetime-local" />
+  </div>
+
+  <div>
+    <label for="absenceEnd">Bis</label>
+    <input id="absenceEnd" type="datetime-local" />
+  </div>
+
+  <div>
+    <label for="absenceNote">Notiz</label>
+    <textarea id="absenceNote" rows="3" placeholder="Optionaler Hinweis"></textarea>
+  </div>
+
+  <div>
+    <button id="saveAbsenceBtn" class="btn-primary" type="button">Abwesenheit speichern</button>
+  </div>
+
+  <div id="absenceStatus" class="status info">Noch keine Abwesenheit gespeichert.</div>
+
+  <div id="absenceList" class="grid"></div>
+</div>
+
         <div class="section grid">
           <div id="dataStatus" class="status info">Noch keine Daten geladen.</div>
-          <div class="toolbar-note">Normale Helfer laden keine vollständige Helferliste. Admins sehen zusätzlich alle aktiven Helfer und können Slots gezielt zuweisen.</div>
+          <div class="toolbar-note">Normale Teammitglieder laden keine vollständige Teammitgliederliste. Admins sehen zusätzlich alle aktiven Teammitglieder und können Slots gezielt zuweisen.</div>
         </div>
       </aside>
 
@@ -588,6 +654,8 @@ main.panel {
     let helperMap = new Map();
     let isBusy = false;
     let calendarCursor = new Date();
+    let allAbsences = [];
+    let filteredBookings = [];
 
     const els = {
       loginView: document.getElementById('loginView'),
@@ -616,7 +684,15 @@ main.panel {
       calendarTodayBtn: document.getElementById('calendarTodayBtn'),
       calendarNextBtn: document.getElementById('calendarNextBtn'),
       calendarMonthLabel: document.getElementById('calendarMonthLabel'),
-      calendarGrid: document.getElementById('calendarGrid')
+      calendarGrid: document.getElementById('calendarGrid'),
+      absenceHelperSelect: document.getElementById('absenceHelperSelect'),
+      absenceType: document.getElementById('absenceType'),
+      absenceStart: document.getElementById('absenceStart'),
+      absenceEnd: document.getElementById('absenceEnd'),
+      absenceNote: document.getElementById('absenceNote'),
+      saveAbsenceBtn: document.getElementById('saveAbsenceBtn'),
+      absenceStatus: document.getElementById('absenceStatus'),
+      absenceList: document.getElementById('absenceList')
     };
 
     function escapeHtml(value) {
@@ -714,9 +790,9 @@ function getNote(row) { return String(row?.note || '').trim(); }
     function slotState(row, slotType) {
       const helperId = getSlotValue(row, slotType);
       const helperName = getHelperName(helperId);
-      if (!helperId) return { label: 'Offen', cls: 'open', meta: 'Noch keinem Helfer zugewiesen.' };
+      if (!helperId) return { label: 'Offen', cls: 'open', meta: 'Noch keinem Teammitglied zugewiesen.' };
       if (isMine(helperId)) return { label: 'Mir zugewiesen', cls: 'mine', meta: 'Dieser Slot gehört aktuell dir.' };
-      return { label: 'Vergeben', cls: 'taken', meta: helperName ? ('Zugewiesen an ' + helperName + '.') : 'Zugewiesen an einen anderen Helfer.' };
+      return { label: 'Vergeben', cls: 'taken', meta: helperName ? ('Übernommen von ' + helperName + '.') : 'Übernommen von einen anderen Teammitglied.' };
     }
 
     async function ensureSupabaseReady() {
@@ -751,6 +827,47 @@ function getNote(row) { return String(row?.note || '').trim(); }
       helperMap = new Map(allHelpers.map(row => [String(row.id), row]));
     }
 
+async function loadCurrentHelperUser(authUserId) {
+  const client = await ensureSupabaseReady();
+  const { data, error } = await client
+    .from('wm_helpers')
+    .select('*')
+    .eq('auth_user_id', authUserId)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}
+
+async function loadHelperDirectory() {
+  const client = await ensureSupabaseReady();
+  const { data, error } = await client
+    .from('wm_helpers')
+    .select('id, name, is_active')
+    .eq('is_active', true)
+    .order('name', { ascending: true });
+
+  if (error) throw error;
+
+  allHelpers = Array.isArray(data) ? data : [];
+  helperMap = new Map(allHelpers.map(row => [String(row.id), row]));
+}
+
+async function loadHelpersForAdmin() {
+  const client = await ensureSupabaseReady();
+  const { data, error } = await client
+    .from('wm_helpers')
+    .select('id, name, email, phone, role, is_active')
+    .eq('is_active', true)
+    .order('name', { ascending: true });
+
+  if (error) throw error;
+
+  allHelpers = Array.isArray(data) ? data : [];
+  helperMap = new Map(allHelpers.map(row => [String(row.id), row]));
+}
+
     async function loadBookings() {
       const client = await ensureSupabaseReady();
       const { data, error } = await client
@@ -762,31 +879,254 @@ function getNote(row) { return String(row?.note || '').trim(); }
       applyFilters();
     }
 
+async function loadAbsences() {
+  const client = await ensureSupabaseReady();
+  const { data, error } = await client
+    .from('wm_helper_absences')
+    .select('*')
+    .order('starts_at', { ascending: true });
+
+  if (error) throw error;
+
+  allAbsences = Array.isArray(data)
+    ? data.map(row => ({
+        ...row,
+        helperid: row.helper_id,
+        startsat: row.starts_at,
+        endsat: row.ends_at
+      }))
+    : [];
+}
+
+function renderAbsenceHelperSelect() {
+  if (!els.absenceHelperSelect) return;
+
+  const helpers = isAdmin()
+    ? allHelpers
+    : [currentHelperUser].filter(Boolean);
+
+  const previousValue = String(els.absenceHelperSelect.value || '');
+
+  let options = '';
+
+  if (isAdmin()) {
+    options += '<option value="all">Alle Teammitglied</option>';
+  }
+
+  options += helpers.map(helper => `
+    <option value="${escapeHtml(helper.id)}">
+      ${escapeHtml(helper.name || helper.email || 'Unbekannter Teammitglied')}
+    </option>
+  `).join('');
+
+  els.absenceHelperSelect.innerHTML = options;
+
+  if (!isAdmin() && currentHelperUser?.id) {
+    els.absenceHelperSelect.value = String(currentHelperUser.id);
+    els.absenceHelperSelect.disabled = true;
+  } else {
+    els.absenceHelperSelect.disabled = false;
+    const allowedValues = [...els.absenceHelperSelect.options].map(o => o.value);
+    els.absenceHelperSelect.value = allowedValues.includes(previousValue) ? previousValue : 'all';
+  }
+}
+
+function renderAbsences() {
+  if (!els.absenceList) return;
+
+  const selectedHelperId = String(
+    els.absenceHelperSelect?.value || (isAdmin() ? 'all' : currentHelperUser?.id || '')
+  );
+
+  const rows = allAbsences
+    .filter(row => {
+      if (selectedHelperId === 'all') return true;
+      return String(row.helperid) === selectedHelperId;
+    })
+    .sort((a, b) => new Date(a.startsat).getTime() - new Date(b.startsat).getTime());
+
+  if (!rows.length) {
+    els.absenceList.innerHTML = `
+      <div class="mini-item">
+        <div class="mini-item-title">Keine Abwesenheiten gefunden</div>
+        <div class="mini-item-meta">Für das ausgewählte Teammitglied sind aktuell keine Abwesenheiten hinterlegt.</div>
+      </div>
+    `;
+    return;
+  }
+
+  els.absenceList.innerHTML = rows.map(row => `
+    <div class="absence-item">
+      <div class="absence-item-head">
+        <div class="absence-item-title">${escapeHtml(getHelperName(row.helperid) || 'Unbekannter Teammitglied')}</div>
+        <div class="chip warn">${escapeHtml(getAbsenceTypeLabel(row.type))}</div>
+      </div>
+      <div class="absence-item-meta">
+        Von ${escapeHtml(formatDateTime(row.startsat))}<br>
+        Bis ${escapeHtml(formatDateTime(row.endsat))}<br>
+        ${row.note ? `Notiz: ${escapeHtml(row.note)}<br>` : ''}
+      </div>
+      <div class="slot-actions" style="margin-top:8px;">
+        <button class="btn-light btn-small" type="button" data-delete-absence="${escapeHtml(row.id)}">Löschen</button>
+      </div>
+    </div>
+  `).join('');
+
+  document.querySelectorAll('[data-delete-absence]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await deleteAbsence(btn.dataset.deleteAbsence);
+    });
+  });
+}
+
+async function saveAbsence() {
+  if (isBusy) return;
+
+  const helperId = String(els.absenceHelperSelect?.value || '').trim();
+  const type = String(els.absenceType?.value || 'urlaub').trim();
+  const startsAt = String(els.absenceStart?.value || '').trim();
+  const endsAt = String(els.absenceEnd?.value || '').trim();
+  const note = String(els.absenceNote?.value || '').trim();
+
+  if (!helperId || !startsAt || !endsAt) {
+    setStatus(els.absenceStatus, 'error', 'Bitte Teammitglied, Von und Bis ausfüllen.');
+    return;
+  }
+
+  if (new Date(endsAt).getTime() <= new Date(startsAt).getTime()) {
+    setStatus(els.absenceStatus, 'error', '"Bis" muss nach "Von" liegen.');
+    return;
+  }
+
+  try {
+    isBusy = true;
+    setStatus(els.absenceStatus, 'info', 'Speichere Abwesenheit ...');
+
+    const client = await ensureSupabaseReady();
+    const { error } = await client
+  .from('wm_helper_absences')
+  .insert({
+    helper_id: helperId,
+    starts_at: new Date(startsAt).toISOString(),
+    ends_at: new Date(endsAt).toISOString(),
+    type,
+    note: note || null,
+    created_by: currentHelperUser?.id || null
+  });
+
+    if (error) throw error;
+
+    setStatus(els.absenceStatus, 'success', 'Abwesenheit gespeichert.');
+    els.absenceStart.value = '';
+    els.absenceEnd.value = '';
+    els.absenceNote.value = '';
+
+    await loadAbsences();
+renderAbsences();
+renderCalendar();
+renderBookings();
+  } catch (err) {
+    console.error(err);
+    setStatus(els.absenceStatus, 'error', 'Speichern fehlgeschlagen: ' + escapeHtml(err.message || String(err)));
+  } finally {
+    isBusy = false;
+  }
+}
+
+async function deleteAbsence(absenceId) {
+  if (isBusy) return;
+
+  try {
+    isBusy = true;
+    setStatus(els.absenceStatus, 'info', 'Lösche Abwesenheit ...');
+
+    const client = await ensureSupabaseReady();
+    const { error } = await client
+      .from('wm_helper_absences')
+      .delete()
+      .eq('id', absenceId);
+
+    if (error) throw error;
+
+    setStatus(els.absenceStatus, 'success', 'Abwesenheit gelöscht.');
+    await loadAbsences();
+renderAbsences();
+renderCalendar();
+renderBookings();
+  } catch (err) {
+    console.error(err);
+    setStatus(els.absenceStatus, 'error', 'Löschen fehlgeschlagen: ' + escapeHtml(err.message || String(err)));
+  } finally {
+    isBusy = false;
+  }
+}
+
+function renderUpcomingAbsences() {
+  if (!els.absenceList) return;
+
+  const rows = (allAbsences || [])
+    .slice()
+    .sort((a, b) => new Date(a.startsat).getTime() - new Date(b.startsat).getTime());
+
+  if (!rows.length) {
+    els.absenceList.innerHTML = `
+      <div class="mini-item">
+        <div class="mini-item-title">Keine Abwesenheiten vorhanden</div>
+        <div class="mini-item-meta">Sobald etwas eingetragen ist, erscheint es hier.</div>
+      </div>
+    `;
+    return;
+  }
+
+  els.absenceList.innerHTML = rows.map(row => {
+    const helperName = getHelperName(row.helperid) || 'Unbekannter Teammitglied';
+
+    return `
+      <div class="absence-item">
+        <div class="absence-item-head">
+          <div class="absence-item-title">${escapeHtml(helperName)}</div>
+          <div class="chip warn">${escapeHtml(getAbsenceTypeLabel(row.type))}</div>
+        </div>
+        <div class="absence-item-meta">
+          ${escapeHtml(formatDateTime(row.startsat))} – ${escapeHtml(formatDateTime(row.endsat))}
+          ${row.note ? '<br>Notiz: ' + escapeHtml(row.note) : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
     function applyFilters() {
-      const search = String(els.searchInput?.value || '').trim().toLowerCase();
-      const slotFilter = String(els.slotFilter?.value || 'all');
-      const days = Number(els.daysFilter?.value || 30);
+  const search = String(els.searchInput?.value || '').trim().toLowerCase();
+  const slotFilter = String(els.slotFilter?.value || 'all');
+  const days = Number(els.daysFilter?.value || 30);
 
-      visibleBookings = allBookings.filter(row => {
-        const start = getStart(row);
-        if (!isFutureWithinDays(start, days)) return false;
-        const haystack = [getCustomer(row), getBookingRef(row), getEmail(row), getNote(row)].join(' ').toLowerCase();
-        if (search && !haystack.includes(search)) return false;
-        const handoverId = getSlotValue(row, 'handover');
-        const returnId = getSlotValue(row, 'return');
-        if (slotFilter === 'open' && handoverId && returnId) return false;
-        if (slotFilter === 'mine' && !isMine(handoverId) && !isMine(returnId)) return false;
-        if (slotFilter === 'handover' && !handoverId) return false;
-        if (slotFilter === 'return' && !returnId) return false;
-        return true;
-      });
+  filteredBookings = allBookings.filter(row => {
+    const haystack = [getCustomer(row), getBookingRef(row), getEmail(row), getNote(row)].join(' ').toLowerCase();
+    if (search && !haystack.includes(search)) return false;
 
-      renderStats();
-      renderMyUpcoming();
-      renderAdminOverview();
-      renderCalendar();
-      renderBookings();
-    }
+    const handoverId = getSlotValue(row, 'handover');
+    const returnId = getSlotValue(row, 'return');
+
+    if (slotFilter === 'open' && handoverId && returnId) return false;
+    if (slotFilter === 'mine' && !isMine(handoverId) && !isMine(returnId)) return false;
+    if (slotFilter === 'handover' && !handoverId) return false;
+    if (slotFilter === 'return' && !returnId) return false;
+
+    return true;
+  });
+
+  visibleBookings = filteredBookings.filter(row => {
+    const start = getStart(row);
+    return isFutureWithinDays(start, days);
+  });
+
+  renderStats();
+  renderMyUpcoming();
+  renderAdminOverview();
+  renderCalendar();
+  renderBookings();
+}
 
     function renderStats() {
       let mineHandover = 0;
@@ -844,7 +1184,7 @@ function getNote(row) { return String(row?.note || '').trim(); }
         return `
   <div class="helper-row">
     <div>
-      <div class="name">${escapeHtml(helper.name || helper.email)}</div>
+      <div class="helper-name">${escapeHtml(helper.name || helper.email)}</div>
       <div class="mini-item-meta">${escapeHtml(helper.email || '')}</div>
     </div>
     <div class="helper-pill blue">Übergaben ${c.handover}</div>
@@ -852,7 +1192,7 @@ function getNote(row) { return String(row?.note || '').trim(); }
     <div class="helper-pill gold">Gesamt ${total}</div>
   </div>
 `;
-      }).join('') || '<div class="mini-item">Keine aktiven Helfer gefunden.</div>';
+      }).join('') || '<div class="mini-item">Keine aktiven Teammitglied gefunden.</div>';
     }
 
     function toDateKey(value) {
@@ -872,6 +1212,63 @@ function getNote(row) { return String(row?.note || '').trim(); }
       const d = new Date(date);
       return d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth();
     }
+
+function parseDateSafe(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function overlapsRange(startA, endA, startB, endB) {
+  if (!startA || !endA || !startB || !endB) return false;
+  return startA <= endB && endA >= startB;
+}
+
+function getAbsenceTypeLabel(value) {
+  const raw = String(value || 'Abwesenheit').trim();
+  if (!raw) return 'Abwesenheit';
+  return raw.replace(/_/g, ' ');
+}
+
+function getBookingConflicts(row) {
+  const bookingStart = parseDateSafe(getStart(row));
+  const bookingEnd = parseDateSafe(getEnd(row)) || bookingStart;
+  if (!bookingStart || !bookingEnd) return [];
+
+  const conflicts = [];
+
+  [
+    { slotType: 'handover', slotLabel: 'Übergabe' },
+    { slotType: 'return', slotLabel: 'Rücknahme' }
+  ].forEach(({ slotType, slotLabel }) => {
+    const helperId = getSlotValue(row, slotType);
+    if (!helperId) return;
+
+    const matchingAbsence = allAbsences.find(absence => {
+  if (String(absence.helper_id) !== String(helperId)) return false;
+  const absenceStart = parseDateSafe(absence.starts_at);
+  const absenceEnd = parseDateSafe(absence.ends_at);
+  return overlapsRange(absenceStart, absenceEnd, bookingStart, bookingEnd);
+});
+
+    if (matchingAbsence) {
+      conflicts.push({
+        slotLabel,
+        helperName: getHelperName(helperId) || 'Teammitglied',
+        typeLabel: getAbsenceTypeLabel(matchingAbsence.type)
+      });
+    }
+  });
+
+  return conflicts;
+}
+
+function getConflictTooltip(conflicts) {
+  if (!conflicts.length) return '';
+  return conflicts
+    .map(item => `${item.slotLabel}: ${item.helperName} (${item.typeLabel})`)
+    .join(' | ');
+}
 
     function openBookingCard(bookingId) {
       const card = document.querySelector(`[data-booking-id="${bookingId}"]`);
@@ -902,64 +1299,91 @@ function getNote(row) { return String(row?.note || '').trim(); }
     const day = new Date(gridStart);
     day.setDate(gridStart.getDate() + i);
 
-    const items = visibleBookings.filter(row => isSameDay(getStart(row), day));
+    const items = filteredBookings.filter(row => isSameDay(getStart(row), day));
+
+    const absenceItems = allAbsences.filter(absence => {
+      const start = parseDateSafe(absence.starts_at);
+      const end = parseDateSafe(absence.ends_at);
+      if (!start || !end) return false;
+
+      const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+      const absenceStartDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      const absenceEndDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+      return dayStart >= absenceStartDay && dayStart <= absenceEndDay;
+    });
+
     const isToday = isSameDay(day, new Date());
     const outside = !isSameMonth(day, monthStart);
+
+    const bookingHtml = items.map(row => {
+      const handoverHelperId = getSlotValue(row, 'handover');
+      const returnHelperId = getSlotValue(row, 'return');
+
+      const handoverHelperName = handoverHelperId
+        ? (getHelperName(handoverHelperId) || (isMine(handoverHelperId) ? 'Du' : 'anderes Teammitglied'))
+        : 'offen';
+
+      const returnHelperName = returnHelperId
+        ? (getHelperName(returnHelperId) || (isMine(returnHelperId) ? 'Du' : 'Teammitglied'))
+        : 'offen';
+
+      const mine = isMine(handoverHelperId) || isMine(returnHelperId);
+
+      let assignmentClass = 'fully-assigned';
+      if (!handoverHelperId && !returnHelperId) {
+        assignmentClass = 'needs-both';
+      } else if (!handoverHelperId || !returnHelperId) {
+        assignmentClass = 'needs-one';
+      }
+
+      const conflicts = getBookingConflicts(row);
+      const hasConflict = conflicts.length > 0;
+      const conflictTooltip = hasConflict ? getConflictTooltip(conflicts) : '';
+
+      return `
+        <button
+          type="button"
+          class="calendar-item ${assignmentClass} ${mine ? 'mine' : ''} ${hasConflict ? 'conflict' : ''}"
+          data-calendar-booking="${escapeHtml(row.id)}"
+          title="${escapeHtml(conflictTooltip)}"
+        >
+          <div class="calendar-item-time">
+            ${escapeHtml(formatDateTime(getStart(row)).split(', ').pop() || '')}
+          </div>
+          <div class="calendar-item-title">
+            ${escapeHtml(getCustomer(row))}
+          </div>
+          <div class="calendar-item-meta">
+            <strong>Übergabe:</strong> ${escapeHtml(handoverHelperName)}<br>
+            <strong>Rücknahme:</strong> ${escapeHtml(returnHelperName)}
+          </div>
+        </button>
+      `;
+    }).join('');
+
+    const absenceHtml = absenceItems.map(row => `
+      <div class="calendar-item absence">
+        <div class="calendar-item-time">Abwesend</div>
+        <div class="calendar-item-title">${escapeHtml(getHelperName(row.helper_id) || 'Teammitglied')}</div>
+        <div class="calendar-item-meta">${escapeHtml(getAbsenceTypeLabel(row.type))}</div>
+      </div>
+    `).join('');
+
+    const dayCount = items.length + absenceItems.length;
 
     cells.push(`
       <div class="calendar-day ${outside ? 'outside' : ''} ${isToday ? 'today' : ''}">
         <div class="calendar-day-head">
           <div class="calendar-day-number">${day.getDate()}</div>
-          <div class="calendar-day-count">${items.length ? items.length + ' Buchung' + (items.length !== 1 ? 'en' : '') : ''}</div>
+          <div class="calendar-day-count">
+            ${dayCount ? dayCount + ' Eintrag' + (dayCount !== 1 ? 'e' : '') : ''}
+          </div>
         </div>
         <div class="calendar-day-list">
-          ${
-            items.length
-              ? items.map(row => {
-                  const handoverHelperId = getSlotValue(row, 'handover');
-                  const returnHelperId = getSlotValue(row, 'return');
-
-                  const handoverHelperName = handoverHelperId
-                    ? (getHelperName(handoverHelperId) || (isMine(handoverHelperId) ? 'Du' : 'anderer Helfer'))
-                    : 'offen';
-
-                  const returnHelperName = returnHelperId
-                    ? (getHelperName(returnHelperId) || (isMine(returnHelperId) ? 'Du' : 'anderer Helfer'))
-                    : 'offen';
-
-                  const mine =
-                    isMine(handoverHelperId) || isMine(returnHelperId);
-
-                  let assignmentClass = 'fully-assigned';
-                  if (!handoverHelperId && !returnHelperId) {
-                    assignmentClass = 'needs-both';
-                  } else if (!handoverHelperId || !returnHelperId) {
-                    assignmentClass = 'needs-one';
-                  }
-
-                  return `
-                    <button
-                      type="button"
-                      class="calendar-item ${assignmentClass} ${mine ? 'mine' : ''}"
-                      data-calendar-booking="${escapeHtml(row.id)}"
-                    >
-                      <div class="calendar-item-time">
-                        ${escapeHtml(formatDateTime(getStart(row)).split(', ').pop() || '')}
-                      </div>
-
-                      <div class="calendar-item-title">
-                        ${escapeHtml(getCustomer(row))}
-                      </div>
-
-                      <div class="calendar-item-meta">
-                        <strong>Übergabe:</strong> ${escapeHtml(handoverHelperName)}<br>
-                        <strong>Rücknahme:</strong> ${escapeHtml(returnHelperName)}
-                      </div>
-                    </button>
-                  `;
-                }).join('')
-              : '<div class="hint">Keine Buchungen</div>'
-          }
+          ${bookingHtml || absenceHtml
+            ? bookingHtml + absenceHtml
+            : '<div class="hint">Keine Einträge</div>'}
         </div>
       </div>
     `);
@@ -1178,39 +1602,58 @@ async function saveBookingPhone(bookingId, phone) {
     }
 
     async function refreshSession() {
-      try {
-        const client = await ensureSupabaseReady();
-        const { data, error } = await client.auth.getSession();
-        if (error) throw error;
-        currentSession = data?.session || null;
-        if (!currentSession?.user) {
-          showLogin();
-          setStatus(els.authStatus, 'info', 'Noch nicht angemeldet.');
-          return;
-        }
-        currentHelperUser = await loadCurrentHelperUser(currentSession.user.id);
-        if (!currentHelperUser) {
-          await client.auth.signOut();
-          showLogin();
-          setStatus(els.authStatus, 'error', 'Für diesen Login wurde kein aktiver Eintrag in wm_helpers gefunden.');
-          return;
-        }
-        els.currentUserBox.textContent = currentHelperUser.name || currentSession.user.email || 'Benutzer';
-        els.userRoleChip.textContent = currentHelperUser.role || 'helper';
-        els.userRoleChip.classList.toggle('admin', isAdmin());
-        allHelpers = [];
-        helperMap = new Map([[String(currentHelperUser.id), currentHelperUser]]);
-        showApp();
-        setStatus(els.dataStatus, 'info', 'Lade Daten ...');
-        if (isAdmin()) await loadHelpersForAdmin();
-        await loadBookings();
-        setStatus(els.dataStatus, 'success', 'Daten erfolgreich geladen.');
-      } catch (err) {
-        console.error(err);
-        showLogin();
-        setStatus(els.authStatus, 'error', 'Initialisierung fehlgeschlagen: ' + escapeHtml(err.message || String(err)));
-      }
+  try {
+    const client = await ensureSupabaseReady();
+    const { data, error } = await client.auth.getSession();
+    if (error) throw error;
+
+    currentSession = data?.session ?? null;
+    if (!currentSession?.user) {
+      showLogin();
+      setStatus(els.authStatus, 'info', 'Noch nicht angemeldet.');
+      return;
     }
+
+    currentHelperUser = await loadCurrentHelperUser(currentSession.user.id);
+    if (!currentHelperUser) {
+      await client.auth.signOut();
+      showLogin();
+      setStatus(els.authStatus, 'error', 'Für diesen Login wurde kein aktiver Eintrag in wm_helpers gefunden.');
+      return;
+    }
+
+    els.currentUserBox.textContent = currentHelperUser.name || currentSession.user.email || 'Benutzer';
+    els.userRoleChip.textContent = currentHelperUser.role || 'helper';
+    els.userRoleChip.classList.toggle('admin', isAdmin());
+
+    showApp();
+setStatus(els.dataStatus, 'info', 'Lade Daten ...');
+
+await loadHelperDirectory();
+
+if (isAdmin()) {
+  await loadHelpersForAdmin();
+}
+
+if (currentHelperUser?.id && !helperMap.has(String(currentHelperUser.id))) {
+  helperMap.set(String(currentHelperUser.id), currentHelperUser);
+}
+
+await loadBookings();
+await loadAbsences();
+
+    renderAbsenceHelperSelect();
+    renderAbsences();
+    renderCalendar();
+    renderBookings();
+
+    setStatus(els.dataStatus, 'success', 'Daten erfolgreich geladen.');
+  } catch (err) {
+    console.error(err);
+    showLogin();
+    setStatus(els.authStatus, 'error', `Initialisierung fehlgeschlagen: ${escapeHtml(err.message || String(err))}`);
+  }
+}
 
     els.loginBtn?.addEventListener('click', login);
     els.logoutBtn?.addEventListener('click', logout);
@@ -1233,6 +1676,8 @@ async function saveBookingPhone(bookingId, phone) {
       renderCalendar();
     });
     els.loginPassword?.addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+        els.saveAbsenceBtn?.addEventListener('click', saveAbsence);
+    els.absenceHelperSelect?.addEventListener('change', renderAbsences);
 
     window.addEventListener('load', async () => {
       try {
